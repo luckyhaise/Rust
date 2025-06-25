@@ -17,8 +17,10 @@ A simple desktop app built with [Tauri](https://tauri.app/) and Rust for convert
    ```
 
 3. Run the app:
-   - To use the App navigate to TEMPERATURE-CONVERTER/src-tauri/target/release/weather.exe
-       
+   - To use the App navigate to
+   ```bash
+   - TEMPERATURE-CONVERTER/src-tauri/target/release/weather.exe
+   ```
    ```bash
    cargo tauri dev
    ```
