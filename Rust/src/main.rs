@@ -1,9 +1,7 @@
-mod datatypes;
-mod game;
-mod Christmas;
-mod FtoC;
-mod function;
+
+
+mod Concurrency;
 fn main(){
-    function::list();
+    Concurrency::main();
 
 }
