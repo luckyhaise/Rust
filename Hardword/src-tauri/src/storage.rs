@@ -1,31 +1,62 @@
 use rusqlite::{params,Connection,Result};
-use tauri::generate_context;
-use std::sync::{Arc,Mutex};
+use serde::Serialize;
+use std::sync::{Mutex};
 pub struct Dbcon(pub Mutex<Connection>);
+#[derive(Serialize)]
+struct Word {
+    id: i32,
+    word: String,
+    meaning: String,
+}
 #[tauri::command]
 
 
-fn insert(con: Connection,words:String,meaning:String)->Result<()>{
- 
+fn insert(state: tauri::State<Dbcon> ,word:String,meaning:String)->Result<(), String>{
+ let con  = state.0.lock().map_err(|e|e.to_string())?;
      con.execute(   
         "INSERT INTO words(word,meaning) VALUES(?,?)",
-        (words,meaning)
-        )?;
-       let q = con.execute( 
-        "SELECT * FROM words;"
-      ,  [])?;
-      println!("{}",q);
-      Ok(())
+        params![word,meaning]
+        ).map_err(|e|e.to_string())?;
+   Ok(())
+   } 
+
+
+
+
+
+#[tauri::command]
+fn get_words(state: tauri::State<Dbcon>)-> Result<Vec<Word>,String>{
+   let con = state.0.lock().map_err(|e|e.to_string())?;
+   let mut stmt=con.prepare("SELECT id ,word ,meaning FROM words").map_err(|e|e.to_string())?;
+   let word_iter = stmt
+   .query_map([],|row|{
+      Ok(Word{
+         id: row.get("id")?,
+         word: row.get("word")?,
+         meaning: row.get("meaning")?,
+      })
+
+   }).map_err(|e|e.to_string())?;
+   let mut words = Vec::new();
+   for word in word_iter{
+      words.push(word.map_err(|e|e.to_string())?);
    }
-        
+
+Ok(words)
+}
 
 
 
 
 
 
-  pub fn main(){
+
+
+
+pub fn main() -> Result<(), Box<dyn std::error::Error>>{
    let con = Connection::open("mydatabase.db")?;
+   
+
    con.execute("
     CREATE TABLE IF NOT EXISTS words(
     id INTEGER PRIMARY KEY,
@@ -33,10 +64,15 @@ fn insert(con: Connection,words:String,meaning:String)->Result<()>{
     meaning TEXT NOT NULL
     
     )",
-       [] );
+       [] )?;
+
+       let db = Dbcon(Mutex::new(con));
+
+
+
    tauri::Builder::default()
-   .plugin(tauri_plugin_opener::init())
-   .invoke_handler(tauri::generate_handler![insert])
-   .run(generate_context!())
-   .expect("Unable to run the app");
+   .manage(db)
+   .invoke_handler(tauri::generate_handler![insert,get_words])
+   .run(tauri::generate_context!())?;
+  Ok(())
   }

@@ -1,7 +1,6 @@
 
+mod pp;
 
-mod Concurrency;
-fn main(){
-    Concurrency::main();
-
+fn main() {
+	pp::main();
 }
